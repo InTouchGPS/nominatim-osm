@@ -19,8 +19,9 @@ class AddressDetails
 {
     private $iPlaceID;
     private $aAddressLines;
+    private $sHousenumberRange;
 
-    public function __construct(&$oDB, $iPlaceID, $sHousenumber, $mLangPref)
+    public function __construct(&$oDB, $iPlaceID, $sHousenumber, $mLangPref, $sHousenumRng = '')
     {
         $this->iPlaceID = $iPlaceID;
 
@@ -38,6 +39,7 @@ class AddressDetails
         $sSQL .= ' ORDER BY rank_address DESC, isaddress DESC';
 
         $this->aAddressLines = $oDB->getAll($sSQL);
+        $this->sHousenumberRange = $sHousenumRng;
     }
 
     private static function isAddress($aLine)
@@ -81,7 +83,9 @@ class AddressDetails
             $sTypeLabel = ClassTypes\getLabelTag($aLine);
 
             $sName = null;
-            if (isset($aLine['localname']) && $aLine['localname']!=='') {
+            if (isset($this->sHousenumberRange) && $this->sHousenumberRange!=='' && isset($aLine['type']) && $aLine['type']=='house_number') {
+                $sName = $this->sHousenumberRange;
+            } else if (isset($aLine['localname']) && $aLine['localname']!=='') {
                 $sName = $aLine['localname'];
             } elseif (isset($aLine['housenumber']) && $aLine['housenumber']!=='') {
                 $sName = $aLine['housenumber'];

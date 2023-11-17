@@ -33,6 +33,7 @@ class PlaceLookup
     protected $sAddressRankListSql = null;
     protected $sAllowedTypesSQLList = null;
     protected $bDeDupe = true;
+    protected $bShowAddressRange = false;
 
 
     public function __construct(&$oDB)
@@ -48,6 +49,11 @@ class PlaceLookup
     public function setIncludeAddressDetails($b)
     {
         $this->bAddressDetails = $b;
+    }
+
+    public function setAddressRangeFlag($bShowAddRng)
+    {
+        $this->bShowAddressRange = $bShowAddRng;
     }
 
     public function loadParamArray($oParams, $sGeomType = null)
@@ -333,6 +339,8 @@ class PlaceLookup
                     $sSQL .= '     place_id, ';
                     $sSQL .= '     parent_place_id, ';
                     $sSQL .= '     housenumber_for_place as housenumber,';
+                    $sSQL .= '     startnumber,';
+                    $sSQL .= '     endnumber,';
                     $sSQL .= "     'us' AS country_code, ";
                     $sSQL .= $this->langAddressSql('housenumber_for_place');
                     $sSQL .= '     null::text AS placename, ';
@@ -354,6 +362,8 @@ class PlaceLookup
                     $sSQL .= '              THEN ST_LineInterpolatePoint(linegeo, (housenumber_for_place-startnumber::float)/(endnumber-startnumber)::float)';
                     $sSQL .= '              ELSE ST_LineInterpolatePoint(linegeo, 0.5) END AS centroid, ';
                     $sSQL .= '         parent_place_id, ';
+                    $sSQL .= '         startnumber, ';
+                    $sSQL .= '         endnumber, ';
                     $sSQL .= '         housenumber_for_place';
                     $sSQL .= '     FROM (';
                     $sSQL .= '            location_property_tiger ';
@@ -436,12 +446,24 @@ class PlaceLookup
             $aPlace['importance'] = (float) $aPlace['importance'];
             if ($this->bAddressDetails) {
                 // to get addressdetails for tiger data, the housenumber is needed
-                $aPlace['address'] = new AddressDetails(
-                    $this->oDB,
-                    $aPlace['place_id'],
-                    $aPlace['housenumber'],
-                    $this->aLangPrefOrderSql
-                );
+                if($this->bShowAddressRange && 
+                    isset($aPlace['startnumber']) && $aPlace['startnumber']!=='' && 
+                    isset($aPlace['endnumber'])  && $aPlace['endnumber']!=='') {
+                    $aPlace['address'] = new AddressDetails(
+                        $this->oDB,
+                        $aPlace['place_id'],
+                        $aPlace['housenumber'],
+                        $this->aLangPrefOrderSql,
+                        $aPlace['startnumber'].'-'.$aPlace['endnumber']
+                    );
+                } else {
+                    $aPlace['address'] = new AddressDetails(
+                        $this->oDB,
+                        $aPlace['place_id'],
+                        $aPlace['housenumber'],
+                        $this->aLangPrefOrderSql
+                    );
+                }
                 $aPlace['langaddress'] = $aPlace['address']->getLocaleAddress();
             }
 
