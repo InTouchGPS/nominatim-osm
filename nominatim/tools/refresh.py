@@ -103,6 +103,7 @@ WEBSITE_SCRIPTS = (
     'lookup.php',
     'polygons.php',
     'reverse.php',
+    'reverse-range.php',
     'search.php',
     'status.php'
 )
